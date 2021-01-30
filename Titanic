@@ -1,0 +1,112 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+train_df = pd.read_csv('train.csv')
+test_df = pd.read_csv('test.csv')
+combine = [train_df, test_df]
+
+
+
+# Question 1: Showing all the features:
+features = train_df.columns.values
+print("The available features are:" )
+print(features)
+
+# Question 5: features contain blank, null or empty values
+train_df.isnull().any()
+test_df.isnull().any()
+
+# Question 6: show the feature data types
+train_df.dtypes
+
+# Question 7：Age, Sibsp, Parch, Fare
+train_df[['Age','SibSp','Parch','Fare']].describe()
+
+# Question 8: Survived, Pclass, Sex, Embarked
+train_df.describe(include='O')
+
+# Question 9:
+train_df[['Pclass', 'Survived']].groupby(['Pclass']).mean()
+
+# Question 10:
+train_df[['Sex','Survived']].groupby(['Sex']).mean()
+
+# Question 11:
+fig = plt.figure()
+fig.add_subplot(121)
+plt.xlabel("Age")
+train_age= train_df['Age']
+train_age[train_df['Survived']==1].hist(bins=20)
+
+fig.add_subplot(122)
+plt.xlabel("Age")
+train_age[train_df['Survived']==0].hist(bins=20)
+
+#number of infants survived
+print("The number of infant survived is :"+ str(train_df[(train_df['Survived']==1) & (train_df['Age']<=4)].shape[0]))
+
+#80 years old survived?
+print("The survived in 80 year old is :"+ str(train_df[(train_df['Survived']==1) & (train_df['Age']>=15)].shape[0]))
+
+#15-25 survived
+print("The not survived in 15-25 year old is :"+ str(train_df[(train_df['Survived']==0) & (train_df['Age']>=15)& (train_df['Age']<=25)].shape[0]))
+
+
+# Question 12:
+g = sns.FacetGrid(train_df, col='Survived', row='Pclass')
+g.map(plt.hist, 'Age',bins=20)
+
+
+# Question 13:
+g = sns.FacetGrid(train_df, row='Embarked', col='Survived')
+g.map(sns.barplot, 'Sex', 'Fare', ci=None, order=None)
+
+
+# Question 14:
+train_ticket = train_df['Ticket']
+duplicate_ticket_rate = (train_ticket[train_df.duplicated(keep=False,subset=['Ticket'])].count())/(train_df.shape[0])
+print("The duplicated ticket is "+ str(duplicate_ticket_rate))
+
+
+# Question 15
+train_Cabin = train_df['Cabin']
+train_Cabin_isnul = train_Cabin.isnull().sum()
+print("The number of cabin isnull in trainset is:"+str(train_Cabin_isnul))
+
+test_Cabin = test_df['Cabin']
+test_Cabin_isnul = test_Cabin.isnull().sum()
+print("The number of cabin isnull in combine is:"+str(test_Cabin_isnul))
+
+
+train_df = train_df.drop(['Ticket', 'Cabin'], axis=1)
+test_df = test_df.drop(['Ticket', 'Cabin'], axis=1)
+combine = [train_df, test_df]
+
+# Question 16:
+train_df=train_df.rename(columns = {'Sex':'Gender'})
+train_df['Gender'] = train_df['Gender'].map({'male':0,'female':1})
+
+# Question 17:  
+age_mean = train_df.Age.dropna().mean()
+age_std = train_df.Age.dropna().std()
+train_df['Age'] = train_df['Age'].apply(lambda x: np.random.uniform(age_std,age_mean) if np.isnan(x) else x)
+
+# Question 18:
+most_freq = train_df.Embarked.mode()[0]
+train_df.Embarked.fillna(most_freq)
+
+# Question 19:
+most_freq_fare = test_df.Fare.mode()[0]
+test_df.Fare.fillna(most_freq_fare)
+
+# Question 20:
+train_df['Fare'] = train_df['Fare'].apply(lambda x: 0 if ((x<=7.91) & (x>-0.001)) else x)
+train_df['Fare'] = train_df['Fare'].apply(lambda x: 1 if ((x<=14.454) & (x>7.91)) else x)
+train_df['Fare'] = train_df['Fare'].apply(lambda x: 2 if ((x<=31.0) & (x>14.454)) else x)
+train_df['Fare'] = train_df['Fare'].apply(lambda x: 3 if ((x<=512.3292) & (x>31.0)) else x)
+
+
+train_df[['Fare','Survived']].groupby(['Fare']).mean()
