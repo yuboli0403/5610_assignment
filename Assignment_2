@@ -1,0 +1,92 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import random
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import KFold
+from sklearn.metrics import accuracy_score
+from sklearn.ensemble import RandomForestClassifier
+
+#read dataset
+
+train_df = pd.read_csv('train.csv')
+test_df = pd.read_csv('test.csv')
+combine = [train_df, test_df]
+
+
+features = train_df.columns.values
+print("The available features are:" )
+print(features)
+train_df.isnull().any()
+
+
+#delete the features we don't need for decision tree
+delete_features = ['PassengerId','Name','SibSp','Parch','Ticket', 'Cabin']
+train_df = train_df.drop(delete_features,1)
+
+#preprocessing features
+age_mean = train_df.Age.dropna().mean()
+age_std = train_df.Age.dropna().std()
+train_df['Age'] = train_df['Age'].apply(lambda x: np.random.uniform(age_std,age_mean) if np.isnan(x) else x)
+
+most_freq = train_df.Embarked.mode()[0]
+train_df.Embarked.fillna(most_freq,inplace = True)
+
+train_df['Sex'] = train_df['Sex'].map({'male':1,'female':0})
+
+train_df['Fare'] = train_df['Fare'].apply(lambda x: 0 if ((x<=7.91) & (x>-0.001)) else x)
+train_df['Fare'] = train_df['Fare'].apply(lambda x: 1 if ((x<=14.454) & (x>7.91)) else x)
+train_df['Fare'] = train_df['Fare'].apply(lambda x: 2 if ((x<=31.0) & (x>14.454)) else x)
+train_df['Fare'] = train_df['Fare'].apply(lambda x: 3 if ((x<=512.3292) & (x>31.0)) else x)
+
+train_df['Age'] = train_df['Age'].apply(lambda x: 0 if ((x<=12) & (x>-0.001)) else x)
+train_df['Age'] = train_df['Age'].apply(lambda x: 1 if ((x<=30) & (x>12)) else x)
+train_df['Age'] = train_df['Age'].apply(lambda x: 2 if ((x<=50) & (x>30)) else x)
+train_df['Age'] = train_df['Age'].apply(lambda x: 3 if ((x<=100) & (x>50)) else x)
+
+
+
+train_df['Embarked'] = train_df['Embarked'].map({'S':0,'C':1,'Q':2})
+
+
+train_df=train_df.round (0).astype (int)
+train_df.head(10)
+
+
+
+X = train_df.values[:,1:]
+Y = train_df.values[:,0]
+
+# create decision tree classifier
+D_tree = DecisionTreeClassifier(criterion="gini")
+kf = KFold(n_splits=5, random_state = None, shuffle=True)
+kf.get_n_splits(X)
+
+
+
+acc=0
+for train_index, test_index in kf.split(X):
+    X_train, X_test = X[train_index], X[test_index]
+    Y_train, Y_test = Y[train_index], Y[test_index]
+    D_tree.fit(X_train,Y_train)
+    Y_pred = D_tree.predict(X_test)
+    acc += accuracy_score(Y_test,Y_pred)
+
+print("Accuracy of decision tree is:" + str(acc / 5))   
+
+
+
+
+
+R_forest = RandomForestClassifier(criterion="gini")
+
+acc=0
+for train_index, test_index in kf.split(X):
+    X_train, X_test = X[train_index], X[test_index]
+    Y_train, Y_test = Y[train_index], Y[test_index]
+    R_forest.fit(X_train,Y_train)
+    Y_pred = D_tree.predict(X_test)
+    acc += accuracy_score(Y_test,Y_pred)
+
+print("Accuracy of random forest is:" + str(acc / 5))  
