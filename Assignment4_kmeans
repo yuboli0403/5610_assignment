@@ -1,0 +1,135 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from numpy.linalg import norm
+from scipy.spatial import distance
+from collections import Counter
+
+iris = pd.read_csv("iris.csv")
+x = iris.iloc[:, [0, 1, 2, 3]].values
+
+iris[iris.species=='setosa']=0
+iris[iris.species=='versicolor']=1
+iris[iris.species=='virginica']=2
+y = iris.iloc[:,4].values
+
+
+
+def k_means(cluster_n,data,iteration_n,distance_metric):
+    group = np.zeros(len(data))
+    center_index = np.random.randint(0,len(data),cluster_n)
+    center = []
+    SSE = []
+    sum = 0
+    for x in center_index:
+        center.append(data[x])
+        
+    
+    for i in range(iteration_n):
+        for j in range(len(data)):
+            #find the minimum distance and assign to the group     
+            group[j] = min(distance_metric,data[j],center)
+
+        #calculate the centroids
+        for k in range(cluster_n):
+            index = [r for r in range(len(group)) if group[r] == k]
+            for x in index:
+                temp_data = np.array(data[x])
+                sum = sum+temp_data
+
+            center[k] = sum/len(index)
+        
+            #reset the sum
+            sum = 0
+                
+        tmp3=0   
+        #calculate the SSE
+        for i in range(len(data)):
+            tmp1 = data[i]
+            tmp2 = center[int(group[i])]
+            tmp3 = tmp3+np.sqrt(np.sum(np.square(tmp1-tmp2)))
+        #store the SSEs             
+        SSE.append(tmp3)
+        
+    return group,SSE,center
+            
+          
+
+            
+            
+            
+#calculate the closest distance and return the index of it      
+            
+def min(distance_metric,data,center):
+    
+    minimum = 9999
+    maximum = 0
+    min_index=0
+    max_index=0
+    #Euclidean distance
+    if distance_metric == 'E':
+        for i in range(3):
+            tmp = norm(np.array(data)-np.array(center[i]))
+            if tmp<minimum:
+                minimum=tmp
+                min_index=i
+        return min_index      
+    #Cosine Distance
+    elif distance_metric == 'C':
+        for i in range(3):
+            tmp = distance.cosine(np.array(data),np.array(center[i]))
+           
+            if tmp<minimum:
+                minimum=tmp
+                min_index=i
+        return min_index   
+    #Jaccard Similarity
+    else:
+        for i in range(3):  
+            
+            for k in range(4):  
+                center[i][k]=round(center[i][k],1)
+            tmp = 1-distance.jaccard(data,center[i])         
+            
+            if tmp>maximum:
+                maximum=tmp
+                max_index=i
+        return max_index      
+        
+            
+            
+           
+group1,SSE1,center1=k_means(3,x,100,'E')
+group2,SSE2,center2=k_means(3,x,100,'C')
+group3,SSE3,center3=k_means(3,x,100,'A')
+
+
+
+print("The final clustering with Euclidean distance is ",group1 )
+print("The final clustering with Cosine distance is ",group2 )
+print("The final clustering with Jarcard distance is ",group3 )
+
+
+
+#each of the group has 50 members, checking the accuracy rate:
+group1_correct=Counter(group1[:50]).most_common()[0][1]+Counter(group1[50:100]).most_common()[0][1]+Counter(group1[100:150]).most_common()[0][1]
+group2_correct=Counter(group2[:50]).most_common()[0][1]+Counter(group2[50:100]).most_common()[0][1]+Counter(group2[100:150]).most_common()[0][1]
+group3_correct=Counter(group3[:50]).most_common()[0][1]+Counter(group3[50:100]).most_common()[0][1]+Counter(group3[100:150]).most_common()[0][1]
+
+
+
+accuracy1 = group1_correct/len(x)
+accuracy2 = group2_correct/len(x)
+accuracy3 = group3_correct/len(x)
+#Euclidean distance, 1-Cosine similarity, and 1 –the GeneralizedJarcard similarity
+
+print("the accuracy of Euclidean distance is ",accuracy1)
+print("the accuracy of Cosine distance is ",accuracy2)
+print("the accuracy of Jaccard distance is ",accuracy3)
+
+
+
+print("the SSE of Euclidean distance is ",SSE1)
+print("the SSE of Cosine distance is ",SSE2)
+print("the SSE of Jaccard distance is ",SSE3)
+
